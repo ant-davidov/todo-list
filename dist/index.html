@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f3ed">
+  <meta name="description" content="Простой список задач на каждый день.">
+  <title>Мои задачи — список дел</title>
+  <style>
+    :root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#263632;background:#f5f3ed;font-synthesis:none}
+    *{box-sizing:border-box} body{margin:0;min-height:100vh} button,input{font:inherit} button{cursor:pointer} button:focus-visible,input:focus-visible{outline:3px solid #8eb7a3;outline-offset:3px}
+    .shell{max-width:1040px;margin:auto;padding:42px 36px 70px}.top{display:flex;align-items:center;justify-content:space-between;padding-bottom:27px;border-bottom:1px solid #dddcd3}.brand{display:flex;align-items:center;gap:10px;font-weight:750;letter-spacing:-.04em;font-size:19px}.brand-icon{width:29px;height:29px;display:grid;place-items:center;background:#365a4e;border-radius:9px;color:white;font-size:17px}.top-note{color:#8c968e;font-size:12px;letter-spacing:.13em;text-transform:uppercase;font-weight:700}
+    main{max-width:720px;margin:0 auto}.intro{display:flex;justify-content:space-between;align-items:end;gap:20px;padding:74px 0 34px}.eyebrow{color:#789185;font-size:12px;font-weight:750;letter-spacing:.15em;text-transform:uppercase;margin:0 0 13px}h1{font-family:Georgia,serif;font-size:clamp(42px,7vw,62px);font-weight:400;line-height:1.05;letter-spacing:-.045em;margin:0}.subtitle{color:#78847c;font-size:15px;line-height:1.6;margin:15px 0 0}.date{white-space:nowrap;text-align:right;color:#829086;font-size:13px;padding-bottom:5px}
+    .card{background:#fff;border:1px solid #e6e9e2;border-radius:19px;box-shadow:0 15px 45px rgba(51,68,56,.055);overflow:hidden}.form-wrap{padding:24px}.form{display:flex;gap:10px}.form input{min-width:0;flex:1;border:1px solid #dfe7df;border-radius:10px;background:#fafbf8;padding:15px 16px;color:#263632}.form input::placeholder{color:#a0aaa1}.add{border:0;border-radius:10px;padding:0 21px;color:#fff;background:#365e4f;font-weight:700;transition:background .15s}.add:hover{background:#26483c}.add span{font-size:21px;vertical-align:-1px;margin-right:7px;font-weight:400}
+    .list-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 24px;border-top:1px solid #edf0eb;border-bottom:1px solid #edf0eb}.list-head h2{font-size:14px;margin:0;font-weight:750}.count{font-size:12px;color:#849188;background:#f1f5f0;border-radius:99px;padding:6px 10px}.tasks{list-style:none;margin:0;padding:0}.task{display:flex;align-items:center;gap:14px;padding:17px 24px;border-bottom:1px solid #f0f2ee}.task:last-child{border:0}.task label{display:flex;align-items:center;gap:14px;flex:1;min-width:0;cursor:pointer}.task input{appearance:none;flex:none;width:21px;height:21px;border:1.5px solid #c8d5cb;border-radius:7px;margin:0;display:grid;place-items:center;cursor:pointer}.task input:checked{background:#608b73;border-color:#608b73}.task input:checked::after{content:'✓';color:white;font-size:15px;font-weight:700}.task-text{font-size:15px;line-height:1.45;overflow-wrap:anywhere}.task input:checked + .task-text{text-decoration:line-through;color:#a5aea7}.delete{border:0;background:transparent;color:#a6b0a7;border-radius:7px;width:34px;height:34px;display:grid;place-items:center}.delete:hover{color:#a65d55;background:#faf0ee}.delete svg{width:17px;height:17px}.empty{text-align:center;padding:48px 20px 51px;color:#849188}.empty-icon{width:48px;height:48px;border-radius:16px;background:#f1f5ee;color:#789782;display:grid;place-items:center;font-size:25px;margin:0 auto 14px}.empty strong{display:block;color:#45594d;font-size:15px;margin-bottom:7px}.empty p{font-size:13px;line-height:1.5;margin:0}.footer{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-top:23px;color:#97a199;font-size:12px}.footer .dot{display:inline-block;width:7px;height:7px;background:#9abda2;border-radius:50%;margin-right:8px}.error{color:#a3453d;font-size:13px;margin:0 24px 16px}.error:empty{display:none}
+    @media(max-width:550px){.shell{padding:26px 18px 45px}.top-note{font-size:10px}.intro{padding:53px 0 27px;display:block}.date{text-align:left;margin-top:19px}.form-wrap{padding:17px}.form{gap:8px}.form input{padding:14px 12px;font-size:14px}.add{padding:0 13px;font-size:13px}.add span{margin-right:4px}.task,.list-head{padding-left:18px;padding-right:18px}.footer{align-items:flex-start;flex-direction:column;gap:8px}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="top"><div class="brand"><span class="brand-icon" aria-hidden="true">✓</span> мои задачи</div><div class="top-note">пространство для дел</div></header>
+    <main>
+      <section class="intro"><div><p class="eyebrow">Немного порядка на каждый день</p><h1>Всё получится.</h1><p class="subtitle">Запишите дела, чтобы освободить место для мыслей.</p></div><div class="date" id="date"></div></section>
+      <section class="card" aria-labelledby="list-title">
+        <div class="form-wrap"><form class="form" id="task-form"><input id="task-input" type="text" maxlength="250" placeholder="Что нужно сделать?" aria-label="Название новой задачи" autocomplete="off" required><button class="add" type="submit"><span aria-hidden="true">+</span> Добавить</button></form></div>
+        <div class="list-head"><h2 id="list-title">Мои дела</h2><span class="count" id="count"></span></div>
+        <ul class="tasks" id="tasks" aria-label="Список задач"></ul>
+        <div class="empty" id="empty"><div class="empty-icon" aria-hidden="true">✳</div><strong>Здесь пока пусто</strong><p>Добавьте первое дело — и начнём.</p></div>
+        <p class="error" id="error" role="alert"></p>
+      </section>
+      <footer class="footer"><span><span class="dot"></span>Всё под контролем</span><span>Ваши задачи сохраняются в этом браузере</span></footer>
+    </main>
+  </div>
+  <script>
+    (() => {
+      const key = 'moi-zadachi-v1';
+      const form = document.querySelector('#task-form');
+      const input = document.querySelector('#task-input');
+      const list = document.querySelector('#tasks');
+      const empty = document.querySelector('#empty');
+      const count = document.querySelector('#count');
+      const error = document.querySelector('#error');
+      let tasks = [];
+      try {
+        const saved = JSON.parse(localStorage.getItem(key) || '[]');
+        if (Array.isArray(saved)) tasks = saved.filter(task => task && typeof task.text === 'string' && typeof task.done === 'boolean');
+      } catch { error.textContent = 'Не удалось прочитать сохранённые задачи в этом браузере.'; }
+      document.querySelector('#date').textContent = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', weekday: 'long' }).format(new Date());
+      function save() {
+        try { localStorage.setItem(key, JSON.stringify(tasks)); error.textContent = ''; }
+        catch { error.textContent = 'Не удалось сохранить задачи. Проверьте настройки браузера.'; }
+      }
+      function render() {
+        list.replaceChildren();
+        tasks.forEach((task, index) => {
+          const item = document.createElement('li'); item.className = 'task';
+          const label = document.createElement('label');
+          const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = task.done; checkbox.setAttribute('aria-label', 'Отметить задачу «' + task.text + '» как выполненную');
+          checkbox.addEventListener('change', () => { tasks[index].done = checkbox.checked; save(); render(); });
+          const text = document.createElement('span'); text.className = 'task-text'; text.textContent = task.text;
+          const remove = document.createElement('button'); remove.className = 'delete'; remove.type = 'button'; remove.setAttribute('aria-label', 'Удалить задачу «' + task.text + '»');
+          remove.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg>';
+          remove.addEventListener('click', () => { tasks.splice(index, 1); save(); render(); });
+          label.append(checkbox, text); item.append(label, remove); list.append(item);
+        });
+        empty.hidden = tasks.length > 0;
+        const remaining = tasks.filter(task => !task.done).length;
+        count.textContent = 'Осталось: ' + remaining;
+      }
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        const text = input.value.trim();
+        if (!text) { input.value = ''; input.focus(); return; }
+        tasks.push({ text, done: false }); save(); render(); input.value = ''; input.focus();
+      });
+      window.addEventListener('storage', event => { if (event.key === key) { try { const saved = JSON.parse(event.newValue || '[]'); tasks = Array.isArray(saved) ? saved.filter(task => task && typeof task.text === 'string' && typeof task.done === 'boolean') : []; render(); } catch {} } });
+      render();
+    })();
+  </script>
+</body>
+</html>
