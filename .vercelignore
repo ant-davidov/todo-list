@@ -1,0 +1,7 @@
+.git
+.openai
+.env*
+!.env.example
+test
+README.md
+server.cjs

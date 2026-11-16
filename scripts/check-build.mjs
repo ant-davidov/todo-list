@@ -1,0 +1,10 @@
+import { readFile } from 'node:fs/promises';
+import { Script } from 'node:vm';
+const page = await readFile(new URL('../dist/index.html', import.meta.url), 'utf8');
+const scripts = [...page.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+if (!scripts.length) throw new Error('Page must include application JavaScript.');
+scripts.forEach((match) => new Script(match[1]));
+JSON.parse(await readFile(new URL('../vercel.json', import.meta.url), 'utf8'));
+await import('../api/profile.js');
+await import('../api/tasks.js');
+console.log('Static page, API modules and Vercel configuration checked.');
