@@ -17,6 +17,7 @@
     .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}.stat{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;min-width:0;padding:14px 16px;background:#fff;border:1px solid #e4e7ee;border-radius:16px;color:inherit;text-align:left;min-height:44px;caret-color:transparent}.stat:hover{background:#f5f1ff;border-color:#b4a0eb}.stat[aria-pressed="true"]{background:#f1edff;border-color:#7955f8}.stat-top{display:flex;align-items:center;gap:8px;color:#59667d;font-size:14px}.stat-top svg{flex:none;width:18px;height:18px}.stat-number{font-size:24px;font-weight:700;line-height:1.2}.purple{color:#6844d6}.green{color:#087a52}.orange{color:#a85a00}
     .tasks-panel{padding:24px}.tasks-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}.task-count{font-size:13px;color:#5c35bd;background:#eee6ff;border-radius:15px;padding:4px 10px;flex:none}.tasks{list-style:none;margin:12px 0 0;padding:0}.task{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #e4e7ee}.task:last-child{border-bottom:0}.task label{display:flex;align-items:center;gap:12px;flex:1;min-width:0;min-height:44px;padding:6px 4px;cursor:pointer}.task input{appearance:none;flex:none;width:24px;height:24px;border:1.5px solid #7a869c;border-radius:7px;margin:0;cursor:pointer;display:grid;place-items:center;background:#fff}.task input:checked{background:#7955f8;border-color:#7955f8}.task input:checked::after{content:'✓';color:#fff;font-size:17px;font-weight:700}.task-text{font-size:16px;overflow-wrap:anywhere;line-height:1.5}.delete{flex:none;border:0;background:transparent;color:#657087;border-radius:10px;width:44px;height:44px;display:grid;place-items:center}.delete:hover{background:#fff0f1;color:#ad3543}.delete svg{width:20px;height:20px}
     .tasks-panel{caret-color:transparent;cursor:default}
+    .task[aria-busy="true"] label,.task[aria-busy="true"] input{cursor:progress}.task[aria-busy="true"] input{background:#fff;border-color:#b4a0eb}.task[aria-busy="true"] input::after{content:'';width:14px;height:14px;border:2px solid #e4dcff;border-top-color:#6844d6;border-radius:50%;animation:loading-spin .9s linear infinite}.task-saving{color:#5c35bd;font-weight:600}@media(prefers-reduced-motion:reduce){.task[aria-busy="true"] input::after{animation:none}}@media(forced-colors:active){.task[aria-busy="true"] input{outline:2px dashed Highlight;outline-offset:2px}.task-saving{color:CanvasText}}
     .task{align-items:flex-start}.task label{align-items:flex-start}.task input{margin-top:2px}.task-body{flex:1;min-width:0}.task-text{display:block}.task input:checked+.task-body .task-text{text-decoration:line-through;color:#657087}.task-meta{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:5px;color:#657087;font-size:13px;line-height:1.5}.task-date{white-space:normal;overflow-wrap:anywhere}.task-date-completed{color:#087a52}.task .delete{margin-top:2px}
     .empty{text-align:center;padding:28px 8px 12px}.empty-icon{display:grid;place-items:center;width:64px;height:64px;background:#f1edff;color:#6844d6;border-radius:18px;margin:0 auto 16px}.empty-icon svg{width:28px;height:28px}.empty strong{display:block;font-size:18px;margin-bottom:8px}.empty p{font-size:14px;color:#59667d;margin:0 auto;max-width:360px}.error{color:#a33232;font-size:14px;margin:16px 0 0}
     .undo{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;padding:8px 12px;background:#f1edff;border-radius:12px;color:#4c329a;font-size:14px}.undo button{min-height:44px;padding:8px 12px;border:1px solid #6844d6;border-radius:8px;background:#fff;color:#5c35bd;font-weight:700}.undo button:hover{background:#e8dfff}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
@@ -80,7 +81,7 @@
   const list = $('#tasks'), empty = $('#empty'), filters = document.querySelectorAll('[data-filter]');
   const dialog = $('#profile-dialog'), auth = $('#auth-panel'), workspace = $('#workspace');
   let guid = null, revision = 0, tasks = [], deleted = [], filter = 'all', busy = false, authBusy = false;
-  let legacyTasks = [], announceTimer, refreshing = false;
+  let legacyTasks = [], announceTimer, refreshing = false, pendingTaskId = null;
   function announce(message) {
     clearTimeout(announceTimer); $('#status').textContent = '';
     announceTimer = setTimeout(() => { $('#status').textContent = message; }, 30);
@@ -128,17 +129,19 @@
     } catch (error) { showError(error.message, $('#auth-error')); }
     finally { setAuthBusy(false); }
   }
-  async function commit(nextTasks) {
+  async function commit(nextTasks, taskId = null) {
     if (busy || !guid) return false;
+    pendingTaskId = taskId;
     setBusy(true);
+    if (taskId) { render(); announce('Сохраняем изменение задачи.'); }
     try {
       const profile = await request('tasks', 'PUT', { revision, tasks: nextTasks });
-      applyProfile(profile); showError(''); render(); return true;
+      applyProfile(profile); pendingTaskId = null; showError(''); render(); return true;
     } catch (error) {
       if (error.status === 409) {
         try { applyProfile(await request('tasks')); } catch { /* Preserve the last confirmed list. */ }
       }
-      render(); showError(error.message); return false;
+      pendingTaskId = null; render(); showError(error.message); return false;
     } finally { setBusy(false); }
   }
   async function refresh() {
@@ -168,18 +171,22 @@
     const visible = tasks.filter(task => filter === 'all' || (filter === 'completed' ? task.done : !task.done));
     visible.forEach(task => {
       const item = document.createElement('li'); item.className = 'task'; item.dataset.id = task.id;
+      const pending = task.id === pendingTaskId;
+      if (pending) item.setAttribute('aria-busy', 'true');
       const label = document.createElement('label'), checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.checked = task.done; checkbox.dataset.action = 'checkbox';
+      if (pending) checkbox.setAttribute('aria-disabled', 'true');
       checkbox.addEventListener('change', async () => {
         const checked = checkbox.checked; checkbox.checked = task.done;
         if (busy) return;
         const next = tasks.map(entry => entry.id === task.id ? { ...entry, done: checked, completedAt: checked ? new Date().toISOString() : null } : entry);
-        if (await commit(next)) announce(checked ? 'Задача выполнена.' : 'Задача снова активна.');
+        if (await commit(next, task.id)) announce(checked ? 'Задача выполнена.' : 'Задача снова активна.');
       });
       const text = document.createElement('span'); text.className = 'task-text'; text.textContent = task.text; text.id = 'task-title-' + task.id; checkbox.setAttribute('aria-labelledby', text.id);
       const body = document.createElement('span'); body.className = 'task-body';
       const meta = document.createElement('span'); meta.className = 'task-meta'; meta.id = 'task-dates-' + task.id;
       if (task.createdAt) meta.append(dateLabel('Создана', task.createdAt));
       if (task.done && task.completedAt) meta.append(dateLabel('Завершена', task.completedAt, true));
+      if (pending) { const saving = document.createElement('span'); saving.className = 'task-saving'; saving.textContent = 'Сохраняем…'; meta.append(saving); }
       body.append(text); if (meta.childElementCount) { body.append(meta); checkbox.setAttribute('aria-describedby', meta.id); }
       const remove = document.createElement('button'); remove.className = 'delete'; remove.type = 'button'; remove.dataset.action = 'delete'; remove.setAttribute('aria-label', 'Удалить задачу «' + task.text + '»');
       remove.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5"/></svg>';
